@@ -9,6 +9,7 @@ import serial
 import serial.tools.list_ports
 import threading
 import csv
+import pandas as pd
 
 from collections import deque
 import matplotlib.pyplot as plt 
@@ -131,7 +132,7 @@ class Application(tk.Tk):
 		self.file_label.grid(row=1, column=0, sticky='nsew', pady=(0, 5))
 
 		self.file_entry = ttk.Entry(save_settings)
-		self.file_entry.insert(0, 'data.csv')
+		self.file_entry.insert(0, 'data.xlsx')
 		self.file_entry.grid(row=1, column=1, columnspan=2, pady=5)
 
 		self.fig = Figure(figsize=(4, 5))
@@ -270,6 +271,7 @@ class Connection:
 		self.t_env = deque(maxlen=20)
 		self.t1 = deque(maxlen=20)
 		self.t2 = deque(maxlen=20)
+		self.data = pd.DataFrame(columns=['Index', 'T_env', 'T_1', 'T_2'])
 
 		[(self.index.append(i), self.t_env.append(20), self.t1.append(20), self.t2.append(20)) for i in range(-30, 0)]
 
@@ -293,8 +295,6 @@ class Connection:
 		Returns:
 		    None: None
 		"""
-		f = open(self.filename, 'a')
-		writer = csv.writer(f, delimiter=',')
 
 		while not self._terminate:
 
@@ -311,7 +311,9 @@ class Connection:
 			
 				if data == "0xFF":
 					self._terminate = True
-					f.close()
+
+					self.data.set_index('Index', inplace=True)
+					self.data.to_excel(self.filename)
 
 					return
 
@@ -320,8 +322,6 @@ class Connection:
 					_, t_env, t1, t2 = data.split(';')
 
 					index = self.index[-1] + 1
-
-					writer.writerow([str(index), t_env, t1, t2])
 
 					t_env = float(t_env)
 					t1 = float(t1)
@@ -340,6 +340,9 @@ class Connection:
 					self.t_env.append(t_env)
 					self.t1.append(t1)
 					self.t2.append(t2)
+
+					d = pd.DataFrame([[index, t_env, t1, t2]], columns=['Index', 'T_env', 'T_1', 'T_2'])
+					self.data = self.data.append(d)
 
 
 	def listen(self) -> None:

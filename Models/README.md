@@ -1,3 +1,3 @@
 ### Models
 
-Models of the final construction, made with blender.
+Models of the final construction, made with Blender.
